@@ -1,6 +1,9 @@
 module Render where
 
-import Carte(Formula (In))
+import Carte(
+             Formula (In), 
+             (:+:) (Inl, Inr)
+            )
 import LogicOperators
 
 class (Functor f) => Render f where
@@ -19,13 +22,18 @@ instance Render Not where
     render (Not x) = "~(" ++ pretty x ++ ")"
 
 instance Render Or where
-    render (Or x y) = "(" ++ pretty y ++ " or " ++ pretty x ++ ")"
+    render (Or x y) = "(" ++ pretty x ++ " or " ++ pretty y ++ ")"
 
 instance Render And where
-    render (And x y) = "(" ++ pretty y ++ " and " ++ pretty x ++ ")"
+    render (And x y) = "(" ++ pretty x ++ " and " ++ pretty y ++ ")"
     
 instance Render Impl where
-    render (Impl x y) = "(" ++ pretty y ++ " => " ++ pretty x ++ ")"
+    render (Impl x y) = "(" ++ pretty x ++ " => " ++ pretty y ++ ")"
 
 instance Render Equiv where
-    render (Equiv x y) = "(" ++ pretty y ++ " <=> " ++ pretty x ++ ")"
+    render (Equiv x y) = "(" ++ pretty x ++ " <=> " ++ pretty y ++ ")"
+
+instance (Render f, Render g) => Render (f :+: g) where
+    render (Inl x) = render x
+    render (Inr x) = render x
+

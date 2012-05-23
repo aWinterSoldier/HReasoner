@@ -29,8 +29,6 @@ instance Render NotProp where
 notProp :: (NotProp :<: f) => String -> Formula f
 notProp s = inject $ NotProp s
 
-
-
 {-- CNF Conversion --}
 
 -- input formula
