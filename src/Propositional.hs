@@ -132,3 +132,55 @@ instance PushNeg And where
 instance (PushNeg f, PushNeg g) => PushNeg (f :+: g) where
     pushNegAlg (Inl x) = pushNegAlg x
     pushNegAlg (Inr x) = pushNegAlg x
+
+-- distributing alternative over conjunction
+type Literal = (Prop :+: NotProp) ()
+type Clause  = [Literal]
+type CNF     = [Clause]
+
+(\/) :: Clause -> Clause -> Clause
+(\/) = (++)
+
+(/\) :: CNF -> CNF -> CNF
+(/\) = (++)
+
+cnf :: Formula Stage2 -> CNF
+cnf = foldFormula cnfAlg
+
+class (Functor f) => ToCNF f where
+    cnfAlg :: f CNF -> CNF
+
+instance ToCNF TT where 
+    cnfAlg TT = []
+
+instance ToCNF FF where
+    cnfAlg FF = [[]]
+
+instance ToCNF Prop where
+    cnfAlg (Prop s) = [[inj (Prop s)]]
+
+instance ToCNF NotProp where
+    cnfAlg (NotProp s) = [[inj (NotProp s)]]
+
+instance ToCNF And where
+    cnfAlg (And x y) = x /\ y
+
+instance ToCNF Or where
+    cnfAlg (Or x y) = [a \/ b | a <- x, b <- y]
+
+instance (ToCNF f, ToCNF g) => ToCNF (f :+: g) where
+    cnfAlg (Inl x) = cnfAlg x
+    cnfAlg (Inr x) = cnfAlg x
+
+{-- Conversion to Implicative Normal Form --}
+data IClause = IClause 
+                [Prop ()] -- conjunction
+                [Prop ()] -- disjuntion
+type INF = [IClause]
+
+inf :: CNF -> INF
+inf = map toImpl 
+    where toImpl disj = IClause [Prop s | Inr (NotProp s) <- disj]
+                                [t      | Inl t@(Prop _)  <- disj]
+
+
