@@ -5,6 +5,7 @@ module Propositional where
 import Prelude hiding(and, or, not)
 import Carte
 import LogicOperators
+import Render
 
 {-- Prepositional logic constructs --}
 data Prop    a = Prop String
@@ -13,14 +14,22 @@ data NotProp a = NotProp String
 instance Functor Prop where
     fmap _ (Prop s) = Prop s
 
+instance Render Prop where
+    render (Prop s) = "(" ++ s ++ ")"
+
 prop :: (Prop :<: f) => String -> Formula f
 prop s = inject $ Prop s
 
 instance Functor NotProp where
     fmap _ (NotProp s) = NotProp s
 
+instance Render NotProp where
+    render (NotProp s) = "~(" ++ s ++ ")"
+
 notProp :: (NotProp :<: f) => String -> Formula f
 notProp s = inject $ NotProp s
+
+
 
 {-- CNF Conversion --}
 
