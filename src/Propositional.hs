@@ -66,6 +66,62 @@ instance (ElimImpl f, ElimImpl g) => ElimImpl (f :+: g) where
     elimImplAlg (Inl x) = elimImplAlg x
     elimImplAlg (Inr x) = elimImplAlg x
 
+-- negation pushdown
+type Stage2 = TT :+: FF :+: Prop :+: NotProp :+: Or :+: And
+
+pushNeg :: Formula Stage1 -> Formula Stage2
+pushNeg = foldFormula pushNegAlg
+
+dualise :: Formula Stage2 -> Formula Stage2
+dualise = foldFormula dualAlg
+
+class (Functor f) => Dualise f where
+    dualAlg :: f (Formula Stage2) -> Formula Stage2
+
+instance Dualise TT where
+    dualAlg TT = ff
+
+instance Dualise FF where
+    dualAlg FF = tt
+
+instance Dualise Prop where
+    dualAlg (Prop s) = notProp s
+
+instance Dualise NotProp where
+    dualAlg (NotProp s) = prop s
+
+instance Dualise Or where
+    dualAlg (Or x y) = and x y
+
+instance Dualise And where
+    dualAlg (And x y) = or x y
+
+instance (Dualise f, Dualise g) => Dualise (f :+: g) where
+    dualAlg (Inl x) = dualAlg x
+    dualAlg (Inr x) = dualAlg x
 
 
+class (Functor f) => PushNeg f where
+    pushNegAlg :: f (Formula Stage2) -> Formula Stage2
 
+instance PushNeg TT where
+    pushNegAlg TT = tt
+
+instance PushNeg FF where
+    pushNegAlg FF = ff
+
+instance PushNeg Prop where
+    pushNegAlg (Prop s) = prop s
+
+instance PushNeg Not where
+    pushNegAlg (Not x) = dualise x
+
+instance PushNeg Or where
+    pushNegAlg (Or x y) = or x y
+
+instance PushNeg And where
+    pushNegAlg (And x y) = and x y
+
+instance (PushNeg f, PushNeg g) => PushNeg (f :+: g) where
+    pushNegAlg (Inl x) = pushNegAlg x
+    pushNegAlg (Inr x) = pushNegAlg x
