@@ -12,7 +12,7 @@ module Carte where
 data Formula f = In {out :: f (Formula f)}
 
 -- Formula coproduct
-infix 6 :+:
+infixr 6 :+:
 data (f :+: g) e = Inl (f e) | Inr (g e)
 
 instance (Functor f, Functor g) => Functor (f :+: g) where
