@@ -3,6 +3,7 @@
 module Propositional where
 
 import Prelude hiding(and, or, not)
+import Data.List.Utils(join)
 import Carte
 import LogicOperators
 import Render
@@ -15,7 +16,7 @@ instance Functor Prop where
     fmap _ (Prop s) = Prop s
 
 instance Render Prop where
-    render (Prop s) = "(" ++ s ++ ")"
+    render (Prop s) = s
 
 prop :: (Prop :<: f) => String -> Formula f
 prop s = inject $ Prop s
@@ -24,7 +25,7 @@ instance Functor NotProp where
     fmap _ (NotProp s) = NotProp s
 
 instance Render NotProp where
-    render (NotProp s) = "~(" ++ s ++ ")"
+    render (NotProp s) = "~" ++ s
 
 notProp :: (NotProp :<: f) => String -> Formula f
 notProp s = inject $ NotProp s
@@ -134,9 +135,16 @@ instance (PushNeg f, PushNeg g) => PushNeg (f :+: g) where
     pushNegAlg (Inr x) = pushNegAlg x
 
 -- distributing alternative over conjunction
-type Literal = (Prop :+: NotProp) ()
-type Clause  = [Literal]
+type Literal = Prop :+: NotProp
+type Clause  = [Formula Literal]
 type CNF     = [Clause]
+
+prettyCNF :: CNF -> String
+prettyCNF c = join "/\\" (map (bracket . prettyClause) c)
+    where bracket s = "(" ++ s ++ ")"
+
+prettyClause :: Clause -> String
+prettyClause c = join "\\/" (map pretty c)
 
 (\/) :: Clause -> Clause -> Clause
 (\/) = (++)
@@ -157,10 +165,10 @@ instance ToCNF FF where
     cnfAlg FF = [[]]
 
 instance ToCNF Prop where
-    cnfAlg (Prop s) = [[inj (Prop s)]]
+    cnfAlg (Prop s) = [[inject (Prop s)]]
 
 instance ToCNF NotProp where
-    cnfAlg (NotProp s) = [[inj (NotProp s)]]
+    cnfAlg (NotProp s) = [[inject (NotProp s)]]
 
 instance ToCNF And where
     cnfAlg (And x y) = x /\ y
@@ -174,13 +182,19 @@ instance (ToCNF f, ToCNF g) => ToCNF (f :+: g) where
 
 {-- Conversion to Implicative Normal Form --}
 data IClause = IClause 
-                [Prop ()] -- conjunction
-                [Prop ()] -- disjuntion
+                [Formula Prop] -- conjunction
+                [Formula Prop] -- disjuntion
 type INF = [IClause]
+
+prettyIClause :: IClause -> String
+prettyIClause (IClause con dis) = "(" ++ conStr ++ ")" ++ "=>" ++ "(" ++ disStr ++ ")"
+    where conStr = join "/\\" (map pretty con)
+          disStr = join "\\/" (map pretty dis)
+
+prettyINF :: INF -> String
+prettyINF f = join "\n" (map prettyIClause f)
 
 inf :: CNF -> INF
 inf = map toImpl 
-    where toImpl disj = IClause [Prop s | Inr (NotProp s) <- disj]
-                                [t      | Inl t@(Prop _)  <- disj]
-
-
+    where toImpl disj = IClause [prop s | In (Inr (NotProp s)) <- disj]
+                                [prop s | In (Inl (Prop s))  <- disj]

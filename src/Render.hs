@@ -36,4 +36,3 @@ instance Render Equiv where
 instance (Render f, Render g) => Render (f :+: g) where
     render (Inl x) = render x
     render (Inr x) = render x
-
