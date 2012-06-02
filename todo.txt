@@ -1,0 +1,22 @@
+// Kod
+
+Kasia:
+- quickcheck
+- cabal + foldery
+
+
+Tomek:
+- monada stanu dla bazy wiedzy
+- pomyśleć o FOLu ;)
+
+
+// Prezentacja
+- wstęp
+- przykłady koproduktów itp.
+- wyrażenia
+- zastosowanie
+
+
+
+
+
