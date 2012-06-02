@@ -5,10 +5,6 @@ import Data.List(nub)
 
 import Propositional 
 
--- TODO: clean up!
-import qualified LogicOperators as L
-import qualified Carte as C
-
 containsLiteral :: Clause -> String -> Maybe Bool
 containsLiteral []     _ = Nothing
 containsLiteral (c:cs) s
@@ -81,4 +77,3 @@ satisfiable f = satisfiable' f (propList f)
                [] -> True
                l | [] `elem` l -> False
                l | otherwise   -> satisfiable' (f ++ l) lits
-
