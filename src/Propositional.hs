@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Propositional where
 
 import Prelude hiding(and, or, not)
 import Data.List.Utils(join)
+
 import Carte
 import LogicOperators
 import Render
@@ -138,6 +140,24 @@ instance (PushNeg f, PushNeg g) => PushNeg (f :+: g) where
 type Literal = Prop :+: NotProp
 type Clause  = [Formula Literal]
 type CNF     = [Clause]
+
+instance Eq (Formula Literal) where
+    (In (Inl (Prop s))) == (In (Inl (Prop p))) = p == s
+    (In (Inr (NotProp s))) == (In (Inr (NotProp p))) = p == s
+    _ == _ = False
+
+instance Ord (Formula Literal) where
+    (In (Inl (Prop _))) <= (In (Inr (NotProp _))) = True
+    (In (Inl (Prop s))) <= (In (Inl (Prop q))) = s <= q
+    (In (Inr (NotProp s))) <= (In (Inr (NotProp q))) = s <= q
+
+literalSymbol :: Formula Literal -> String
+literalSymbol (In (Inr (NotProp s))) = s
+literalSymbol (In (Inl (Prop s))) = s
+
+literalSign :: Formula Literal -> Bool
+literalSign (In (Inr _)) = False
+literalSign (In (Inl _)) = True
 
 prettyCNF :: CNF -> String
 prettyCNF c = join "/\\" (map (bracket . prettyClause) c)
