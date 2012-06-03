@@ -24,10 +24,6 @@ newtype KnowledgeBase a = KB (State CNF a) deriving(Functor,
     Monad, 
     MonadState CNF)
 
-unwrapKB :: KnowledgeBase a -> State CNF a
-unwrapKB (KB s) = s
-
-
 {-- Knowledge Base manipulation functions --}
 consistent :: KnowledgeBase Bool
 consistent = do
@@ -43,7 +39,7 @@ prove :: Formula Input -> KnowledgeBase Bool
 prove f = do
     kb <- get 
     let 
-        notF =  convertToCNF (L.not f)
+        notF = convertToCNF (L.not f)
     return $ (not . satisfiable) (kb ++ notF)
 
 runKB :: KnowledgeBase a -> CNF -> (a, CNF)

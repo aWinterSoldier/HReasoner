@@ -13,6 +13,7 @@ import Render
 import qualified LogicOperators as L
 import Propositional
 import Resolve
+import KnowledgeBase
 
 
 bruteSAT :: CNF -> Bool
@@ -39,9 +40,23 @@ evaluate f ls = all hasTrueLit f
 
 propEquiv :: Formula Input -> Bool
 propEquiv f = let
-    cf = (cnf . pushNeg . elimImpl) f
+    cf = convertToCNF f
  in
     bruteSAT cf == satisfiable cf
+
+propConsistent :: Formula Input -> Bool
+propConsistent f = let
+    cf = convertToCNF f
+ in
+    bruteSAT cf == evalKB consistent cf
+
+propProve :: Formula Input -> Formula Input -> Bool
+propProve f g = let
+    kb  = convertToCNF f
+    kba = convertToCNF (f `L.and` (L.not g))
+ in
+    not (bruteSAT kba) == evalKB (prove g) kb
+
 
 -- quickCheck requires show 
 instance Show (Formula Input) where
@@ -57,7 +72,7 @@ randOpNo rnd flat = let
     fst $ randomR (0, bound) rnd
 
 randProp :: StdGen -> String
-randProp rnd = (chr (fst $ randomR (97, 122) rnd)) : []
+randProp rnd = (chr (fst $ randomR (97, 102) rnd)) : []
 
 randomF :: StdGen -> Int -> (Formula Input)
 randomF gen n =
@@ -74,5 +89,3 @@ randomF gen n =
             5 -> (randomF gen1 (n - 1)) `L.and`   (randomF gen2 (n - 1))
             6 -> (randomF gen1 (n - 1)) `L.impl`  (randomF gen2 (n - 1))
             7 -> (randomF gen1 (n - 2)) `L.equiv` (randomF gen2 (n - 2))
-
---quickCheckWith stdArgs {maxSize = 9, maxSuccess = 1000} propEquiv 
