@@ -1,4 +1,9 @@
-module Resolve where
+module Resolve
+--(
+--  satisfiable,
+--  rectify
+--)
+where
 
 import qualified Data.Set as S
 import Data.List(nub)

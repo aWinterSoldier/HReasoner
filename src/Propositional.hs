@@ -175,6 +175,9 @@ prettyClause c = join "\\/" (map pretty c)
 cnf :: Formula Stage2 -> CNF
 cnf = foldFormula cnfAlg
 
+convertToCNF :: Formula Input -> CNF
+convertToCNF = cnf . pushNeg . elimImpl
+
 class (Functor f) => ToCNF f where
     cnfAlg :: f CNF -> CNF
 
