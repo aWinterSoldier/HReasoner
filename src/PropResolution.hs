@@ -50,29 +50,29 @@ instance Show (Formula Input) where
 instance Arbitrary (Formula Input) where
     arbitrary = MkGen randomF
   
-randOpNo :: StdGen -> Int
-randOpNo rnd = fst $ randomR (0, 8) rnd
+randOpNo :: StdGen -> Bool -> Int
+randOpNo rnd flat = let 
+    bound = if flat then 2 else 7
+ in
+    fst $ randomR (0, bound) rnd
+
 randProp :: StdGen -> String
 randProp rnd = (chr (fst $ randomR (97, 122) rnd)) : []
 
 randomF :: StdGen -> Int -> (Formula Input)
 randomF gen n =
-    if n <= 0 then L.ff
-    else
-        let
-            op = randOpNo gen
-            (gen1, gen2) = split gen
-         in
-            case op of
-                0 -> L.tt
-                1 -> L.ff
-                2 -> prop $ randProp gen
-                -- TODO something wrong with notProp here!
-                3 -> prop $ randProp gen--notProp $ randProp gen
-                4 -> L.not $ randomF gen (n - 1)
-                5 -> (randomF gen1 (n - 1)) `L.or`    (randomF gen2 (n - 1))
-                6 -> (randomF gen1 (n - 1)) `L.and`   (randomF gen2 (n - 1))
-                7 -> (randomF gen1 (n - 1)) `L.impl`  (randomF gen2 (n - 1))
-                8 -> (randomF gen1 (n - 1)) `L.equiv` (randomF gen2 (n - 1))
+    let
+        op = randOpNo gen (n <= 0)
+        (gen1, gen2) = split gen
+     in
+        case op of
+            0 -> L.tt
+            1 -> L.ff
+            2 -> prop $ randProp gen
+            3 -> L.not $ randomF gen (n - 1)
+            4 -> (randomF gen1 (n - 1)) `L.or`    (randomF gen2 (n - 1))
+            5 -> (randomF gen1 (n - 1)) `L.and`   (randomF gen2 (n - 1))
+            6 -> (randomF gen1 (n - 1)) `L.impl`  (randomF gen2 (n - 1))
+            7 -> (randomF gen1 (n - 2)) `L.equiv` (randomF gen2 (n - 2))
 
 --quickCheckWith stdArgs {maxSize = 9, maxSuccess = 1000} propEquiv 
