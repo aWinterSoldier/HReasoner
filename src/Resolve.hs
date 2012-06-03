@@ -69,7 +69,9 @@ resolutionStep' f (l:ls) acc = let
     resolutionStep' f ls newAcc
 
 satisfiable :: CNF -> Bool
-satisfiable f = satisfiable' f (propList f)
+satisfiable f = if [] `elem` f
+                    then False
+                    else satisfiable' f (propList f)
     where satisfiable' f lits = let
              newClauses = (resolutionStep f lits) \\ f -- :)
            in
