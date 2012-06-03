@@ -1,7 +1,7 @@
 module Resolve where
 
 import qualified Data.Set as S
-import Data.List(nub)
+import Data.List(nub, (\\))
 
 import Propositional 
 
@@ -71,7 +71,7 @@ resolutionStep' f (l:ls) acc = let
 satisfiable :: CNF -> Bool
 satisfiable f = satisfiable' f (propList f)
     where satisfiable' f lits = let
-             newClauses = resolutionStep f lits
+             newClauses = (resolutionStep f lits) \\ f -- :)
            in
              case newClauses of
                [] -> True
