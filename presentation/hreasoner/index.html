@@ -126,6 +126,8 @@
     <div class="slide">
         <p>Koprodukt konstruktorów typu</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ infixr 6 :+:       
+ 
  data (f :+: g) e = Inl (f e) | Inr (g e)</textarea></p>
     </div>
     <div class="slide">
@@ -214,6 +216,8 @@
     <div class="slide">
         <p><code>sub :<: sup</code> jest spełnione, jeśli istnieje włożenie z <code>sub a</code> w <code>sup a</code>:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ infixr :<:
+ 
  class (Functor sub, Functor sup) => sub :<: sup where
      inj :: sub a -> sup a
  
@@ -256,11 +260,254 @@
 <!-- Examples (T) -->
 
 
-<!-- Logic, code snippets, different kinds of formula (K) -->
+<!-- Logic, code snippets, different kinds of formulae (K) -->
+
+<section class="slide">
+    <h2>Rachunek zdań à la carte</h2>
+    <div>
+        <p>Ogólny typ dla formuły logicznej:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data Formula f = In {out :: f (Formula f)}
+ 
+ foldFormula :: (Functor f) => (f a -> a) -> Formula f -> a
+ foldFormula algebra (In t) = algebra (fmap (foldFormula algebra) t)</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Typy dla operatorów logicznych:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data TT a     = TT 
+ data FF a     = FF
+ data Not a    = Not a
+ data Or a     = Or a a
+ data And a    = And a a
+ data Impl a   = Impl a a
+ data Equiv a  = Equiv a a</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Typy dla zmiennych zdaniowych:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data Prop    a = Prop String
+ data NotProp a = NotProp String</textarea></p>
+    </div>
+    <p class="slide">Operatory i zmienne zdaniowe są funktorami.</p>
+</section>
+
+<section class="slide">
+    <h2>Rachunek zdań à la carte</h2>
+    <div>
+        <p>&quotKonstruktory&quot:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ tt :: (TT :<: f) => Formula f
+ tt = inject TT
+ 
+ ff :: (FF :<: f) => Formula f
+ ff = inject FF
+ 
+ not :: (Not :<: f) => Formula f -> Formula f
+ not = inject . Not
+ 
+ or :: (Or :<: f) => Formula f -> Formula f -> Formula f
+ or x y = inject $ Or x y
+ 
+ and :: (And :<: f) => Formula f -> Formula f -> Formula f
+ and x y = inject $ And x yi
+ 
+ impl :: (Impl :<: f) => Formula f -> Formula f -> Formula f
+ impl x y = inject $ Impl x y
+ 
+ equiv :: (Equiv :<: f) => Formula f -> Formula f -> Formula f
+ equiv x y = inject $ Equiv x y
+ 
+ prop :: (Prop :<: f) => String -> Formula f
+ prop s = inject $ Prop s
+ 
+ notProp :: (NotProp :<: f) => String -> Formula f
+ notProp s = inject $ NotProp s</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konwersja formuły do postaci CNF</h2>
+    <h3>Eliminacja implikacji (i równoważności)</h3>
+    <div>
+        <p>Typ dla formuły przed i po tym kroku:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ type Input  = TT :+: FF :+: Prop :+: Not :+: Or :+: And :+: Impl :+: Equiv
+ type Stage1 = TT :+: FF :+: Prop :+: Not :+: Or :+: And</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Zdefiniujemy klasę <code>ElimImpl</code> i użyjemy funkcji <code>foldFormula</code>:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ class (Functor f) => ElimImpl f where
+     elimImplAlg :: f (Formula Stage1) -> Formula Stage1
+     
+ instance (ElimImpl f, ElimImpl g) => ElimImpl (f :+: g) where
+     elimImplAlg (Inl x) = elimImplAlg x
+     elimImplAlg (Inr x) = elimImplAlg x
+ 
+ elimImpl :: Formula Input -> Formula Stage1
+ elimImpl = foldFormula elimImplAlg</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konwersja formuły do postaci CNF</h2>
+    <h3>Eliminacja implikacji (i równoważności)</h3>
+    <div>
+        <p>Instancje klasy <code>ElimImpl</code>:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ instance ElimImpl TT where
+     elimImplAlg TT = tt
+ 
+ instance ElimImpl FF where
+     elimImplAlg FF = ff
+ 
+ instance ElimImpl Prop where
+     elimImplAlg (Prop s) = prop s
+ 
+ instance ElimImpl Not where 
+     elimImplAlg (Not x) = not x
+ 
+ instance ElimImpl Or where
+     elimImplAlg (Or x y) = or x y
+ 
+ instance ElimImpl And where
+     elimImplAlg (And x y) = and x y
+ 
+ instance ElimImpl Impl where
+     elimImplAlg (Impl x y) = or (not x) y
+ 
+ instance ElimImpl Equiv where 
+     elimImplAlg (Equiv x y) = and (or (not x) y) (or (not y) x)</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konwersja formuły do postaci CNF</h2>
+    <h3>Przesunięcie negacji na najniższy poziom</h3>
+    <div>
+        <p>Typ dla formuły przed i po tym kroku:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ type Stage1 = TT :+: FF :+: Prop :+: Not :+: Or :+: And
+ type Stage2 = TT :+: FF :+: Prop :+: NotProp :+: Or :+: And</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Odpowiednie klasy i funkcje:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ class (Functor f) => PushNeg f where
+    pushNegAlg :: f (Formula Stage2) -> Formula Stage2
+ 
+ class (Functor f) => Dualise f where
+     dualAlg :: f (Formula Stage2) -> Formula Stage2
+ 
+ pushNeg :: Formula Stage1 -> Formula Stage2
+ pushNeg = foldFormula pushNegAlg
+ 
+ dualise :: Formula Stage2 -> Formula Stage2
+ dualise = foldFormula dualAlg</textarea></p>
+    </div>
+    <p class="slide">Nie potrzebujemy instancji dla implikacji ani równoważności :).</p>
+</section>
+
+<section class="slide">
+    <h2>Konwersja formuły do postaci CNF</h2>
+    <h3>Rozdzielenie alternatywy względem koniunkcji</h3>
+    <div>
+        <p>Typ dla formuły przed i po tym kroku:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ type Stage2 = TT :+: FF :+: Prop :+: NotProp :+: Or :+: And
+ 
+ type Literal = Prop :+: NotProp
+ type Clause  = [Formula Literal]
+ type CNF     = [Clause] -- nie strzelajmy z armaty do wróbli</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Odpowiednia klasa i funkcja:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ cnf :: Formula Stage2 -> CNF
+ cnf = foldFormula cnfAlg
+ 
+ class (Functor f) => ToCNF f where
+     cnfAlg :: f CNF -> CNF
+ </textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konwersja formuły do postaci CNF</h2>
+    <h3>Całość</h3>
+    <div>
+        <p>Składamy wcześniej zdefiniowane funkcje:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ convertToCNF :: Formula Input -> CNF
+ convertToCNF = cnf . pushNeg . elimImpl</textarea></p>
+    </div>
+    <p class="slide">Gotowe.</p>
+</section>
 
 <!-- Resolution + knowledge base monad (T) -->
 
 <!-- QuickCheck (K) -->
+
+<section class="slide">
+    <h2>Testy - QuickCheck</h2>
+    <div>
+        <p>Brutalna metoda:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ bruteSAT :: CNF -> Bool</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Sprawdzane własności:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ propEquiv :: Formula Input -> Bool
+ propEquiv f = let
+     cf = convertToCNF f
+  in
+     bruteSAT cf == satisfiable cf
+ 
+ propConsistent :: Formula Input -> Bool
+ propConsistent f = let
+     cf = convertToCNF f
+  in
+     bruteSAT cf == evalKB consistent cf
+ 
+ propProve :: Formula Input -> Formula Input -> Bool
+ propProve f g = let
+     kb  = convertToCNF f
+     kba = convertToCNF (f `L.and` (L.not g))
+  in
+     not (bruteSAT kba) == evalKB (prove g) kb</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Testy - QuickCheck</h2>
+    <div>
+        <p>Generowanie losowej formuły:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ instance Arbitrary (Formula Input) where
+     arbitrary = MkGen randomF
+ 
+ randOpNo :: StdGen -> Bool -> Int
+ randProp :: StdGen -> String
+ 
+ randomF :: StdGen -> Int -> (Formula Input)
+ randomF gen n =
+     let
+         op = randOpNo gen (n <= 0)
+         (gen1, gen2) = split gen
+      in
+         case op of
+             0 -> L.tt
+             1 -> L.ff
+             2 -> prop $ randProp gen
+             3 -> L.not $ randomF gen (n - 1)
+             4 -> (randomF gen1 (n - 1)) `L.or`    (randomF gen2 (n - 1))
+             5 -> (randomF gen1 (n - 1)) `L.and`   (randomF gen2 (n - 1))
+             6 -> (randomF gen1 (n - 1)) `L.impl`  (randomF gen2 (n - 1))
+             7 -> (randomF gen1 (n - 2)) `L.equiv` (randomF gen2 (n - 2))</textarea></p>
+    </div>
+</section>
 
 <!-- deck.navigation snippet -->
 <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
