@@ -10,7 +10,7 @@ import Carte
 import LogicOperators
 import Render
 
-{-- Prepositional logic constructs --}
+{-- Propositional logic constructs --}
 data Prop    a = Prop String
 data NotProp a = NotProp String
 
