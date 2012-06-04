@@ -91,7 +91,7 @@
         <strong>oddzielne definicje, sztuczne klasy</strong> - trochę wygodniejsze w użyciu, ale i tak powtarzamy się 
         </li>
         <li class="slide">
-        <strong>jedna definicja, dedykowane funkcje</strong> - osłabiamy kontrolę typów, just say no
+        <strong>jedna definicja, dedykowane funkcje</strong> - osłabiamy kontrolę typów, nie po to wybraliśmy ten język 
         </li>
     </ul>
     <p class="slide">
@@ -103,7 +103,8 @@
     <h2>Data types à la carte</h2>
     <div class="slide">
         <p>Rozwiązanie: rekurencyjny typ danych dla wyrażenia</p>
-        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+        <p>
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  data Expr f = In (f (Expr f))
  
  data Val e = Val Int
@@ -118,6 +119,13 @@
         <li class="slide">Typ "liściowy" (<strong>Val e</strong>) kończy rekurencję.</li>
     </ul>
     </div>
+
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ type IntExpr = Expr Val
+ type AddExpr = Expr Add</textarea>
+    </div>
+
     <p class="slide">Jak połączyć dwa typy?</p>
 </section>
 
@@ -139,11 +147,13 @@
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  instance Functor Val where
      fmap f (Val x) = Val x
+      
  instance Functor Add where
      fmap f (Add e1 e2) = Add (f e1) (f e2)</textarea></p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  instance (Functor f, Functor g) => Functor (f :+: g) where
-     fmap f (Inl e) = Inl (fmap f e)</textarea></p>
+     fmap f (Inl e) = Inl (fmap f e)
+     fmap f (Inr e) = Inr (fmap f e)</textarea></p>
     </div>
 </section>
 
@@ -170,11 +180,15 @@
      evalAlgebra (Inl x) = evalAlgebra x
      evalAlgebra (Inr y) = evalAlgebra y</textarea></p>
     </div> 
-    <div class="slide">
+    <p class="slide">Dla każdej operacji definiujemy nową, rozłączną klasę.</p>
+</section>
+<section class="slide">
+    <h2>Obliczamy wartość wyrażenia</h2>
+    <div>
         <p>I możemy wyliczyć wartość wyrażenia</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  eval :: Eval f => Expr f -> Int
-     eval expr = foldExpr evalAlgebra expr</textarea></p>
+ eval expr = foldExpr evalAlgebra expr</textarea></p>
         <p><textarea id="code" name="code" class="code slide" mode="haskell" style="display: none;"> > eval addExample
  > 1337</textarea></p>
     </div>
