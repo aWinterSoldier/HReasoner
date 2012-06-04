@@ -48,29 +48,27 @@
     <h2>Prosty przykład</h2>
     <div class="slide">
         <p>Wyrażenia arytmetyczne z dodawaniem</p>
-        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
-            data Expr = Val Int | Add Expr Expr
-         
-            eval :: Expr -> Int
-            eval (Val x) = x
-            eval (Add x y) = eval x + eval y
-        </textarea>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data Expr = Val Int | Add Expr Expr
+ 
+ eval :: Expr -> Int
+ eval (Val x)   = x
+ eval (Add x y) = eval x + eval y</textarea></p>
     </div>
 
     <div class="slide">
         <p>Co jeśli chcemy dodać mnożenie?</p>
-        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
-            data Expr = Val Int | Add Expr Expr | Mul Expr Expr
-             
-            eval :: Expr -> Int
-            eval (Val x) = x
-            eval (Add x y) = eval x + eval y
-            eval (Mul x y) = eval x * eval y
-        </textarea>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data Expr = Val Int | Add Expr Expr | Mul Expr Expr
+ 
+ eval :: Expr -> Int
+ eval (Val x)   = x
+ eval (Add x y) = eval x + eval y
+ eval (Mul x y) = eval x * eval y</textarea></p>
     </div>
 
     <p class="slide">
-    Trzeba zmodyfikować wszystkie funkcje robiące pattern matching na <strong>Expr</strong>!
+    Trzeba zmodyfikować wszystkie funkcje wykonujące pattern matching na <strong>Expr</strong>!
     </p>
 </section>
 
@@ -103,34 +101,166 @@
 
 <section class="slide">
     <h2>Data types à la carte</h2>
-    <p>Rozwiązanie: rekurencyjny typ danych dla wyrażenia</p>
-    <textarea id="code" name="code" class="code slide" mode="haskell" style="display: none;">
-        data Expr f = In (f (Expr f))
-         
-        data Val e = Val Int
-        data Add e = Add e e
-    </textarea>
-    <p class="slide">Jak to działa?</p>
+    <div class="slide">
+        <p>Rozwiązanie: rekurencyjny typ danych dla wyrażenia</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data Expr f = In (f (Expr f))
+ 
+ data Val e = Val Int
+ data Add e = Add e e</textarea></p>
+    </div>
+    <div>
+        <p class="slide">Jak to działa?</p>
     <ul>
         <li class="slide">Jaki jest rodzaj <strong>Expr</strong>?</li>
         <li class="slide"><code>(* -> *) -> *</code></li> 
         <li class="slide">Wyrażenie jest propagowane w dół drzewa.</li>
         <li class="slide">Typ "liściowy" (<strong>Val e</strong>) kończy rekurencję.</li>
     </ul>
+    </div>
     <p class="slide">Jak połączyć dwa typy?</p>
 </section>
 
 <section class="slide">
-    <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
-      let x = 5
-      class Functor f where
-          fmap :: (a -> b) -> f a -> f b 
-      
-      instance Functor Maybe where
-          fmap f Nothing  = Nothing
-          fmap f (Just a) = Just $ f a
-    </textarea>
+    <h2>Koprodukt (suma rozłączna)</h2>
+    <div class="slide">
+        <p>Koprodukt konstruktorów typu</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ data (f :+: g) e = Inl (f e) | Inr (g e)</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Przykład</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ addExample :: Expr (Val :+: Add)
+ addExample = In (Inr (Add (In (Inl (Val 118))) (In (Inl (Val 1219)))))</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Koprodukt dwóch funktorów też jest funktorem</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ instance Functor Val where
+     fmap f (Val x) = Val x
+ instance Functor Add where
+     fmap f (Add e1 e2) = Add (f e1) (f e2)</textarea></p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ instance (Functor f, Functor g) => Functor (f :+: g) where
+     fmap f (Inl e) = Inl (fmap f e)</textarea></p>
+    </div>
 </section>
+
+<section class="slide">
+    <h2>Obliczamy wartość wyrażenia</h2>
+    <div class="slide">
+        <p>Pamiętamy, że <code>f</code> jest funktorem</p>
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ foldExpr :: Functor f => (f a -> a) -> Expr f -> a
+ foldExpr f (In t) = f (fmap (foldExpr f) t)</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Definiujemy funkcję <code>evalAlgebra</code>, która będzie pierwszym argumentem dla <code>foldExpr</code></p>
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ class Functor f => Eval f where
+     evalAlgebra :: f Int -> Int
+ 
+ instance Eval Val where
+     evalAlgebra (Val x) = x
+ instance Eval Add where
+     evalAlgebra (Add x y) = x + y
+ 
+ instance (Eval f, Eval g) => Eval (f :+: g) where
+     evalAlgebra (Inl x) = evalAlgebra x
+     evalAlgebra (Inr y) = evalAlgebra y</textarea></p>
+    </div> 
+    <div class="slide">
+        <p>I możemy wyliczyć wartość wyrażenia</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ eval :: Eval f => Expr f -> Int
+     eval expr = foldExpr evalAlgebra expr</textarea></p>
+        <p><textarea id="code" name="code" class="code slide" mode="haskell" style="display: none;"> > eval addExample
+ > 1337</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konstruowanie wyrażeń - podejście 1</h2>
+    <div class="slide">
+        <p>Przypomnijmy sobie, jak obrzydliwie wyglądała definicja <code>addExample:</code></p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ addExample :: Expr (Val :+: Add)
+ addExample = In (Inr (Add (In (Inl (Val 118))) (In (Inl (Val 1219)))))</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Warto by zdefiniować pomocnicze funkcje budujące wyrażenia.</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ val :: Int -> Expr Val
+ val x = In (Val x)
+ 
+ infixl 6 |+|
+ 
+ (|+|) :: Expr Add -> Expr Add -> Expr Add
+ x |+| y = In (Add x y)</textarea></p>
+    </div>
+    <p class="slide">Chcielibyśmy napisać val 1 |+| val 3...</p>
+    <p class="slide">...ale otrzymamy type error: funkcja <code>|+|</code> wymaga, aby oba argumenty były typu <code>Expr Add</code>.</p>
+</section>
+
+<section class="slide">
+    <h2>Konstruowanie wyrażeń - podejście 2</h2>
+    <div class="slide">
+        <p>Typy dla <code>val</code> i <code>|+|</code> będą teraz wyglądały następująco:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ (|+|) :: (Add :<: f) => Expr f -> Expr f -> Expr f
+ val   :: (Val :<: f) => Int -> Expr f</textarea></p>
+    </div>
+    <div class="slide">
+        <p><code>sub :<: sup</code> jest spełnione, jeśli istnieje włożenie z <code>sub a</code> w <code>sup a</code>:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ class (Functor sub, Functor sup) => sub :<: sup where
+     inj :: sub a -> sup a
+ 
+ instance Functor f => f :<: f where
+     inj = id
+ instance (Functor f, Functor g) => f :<: (f :+: g) where
+     inj = Inl
+ instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
+     inj = Inr . inj</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Powyższe instancje nie wyczerpują wszystkich przypadków.</p>
+        <p>Na przykład nie wynika z nich, że <code>f :<: ((f :+: g) :+: h)</code> (<code>Inl . Inl</code>...).</p>
+        <p>Ale w połączeniu z definicją <code>:+:</code> jako <code>infixr</code> wystarczą!</p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Konstruowanie wyrażeń - podejście 2</h2>
+    <div class="slide">
+        <p>Nowe definicje dla <code>val</code> i <code>|+|</code>:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ inject :: (g :<: f) => g (Expr f) -> Expr f
+ inject = In . inj
+ 
+ val   :: (Val :<: f) => Int -> Expr f
+ val x   = inject (Val x)
+ 
+ (|+|) :: (Add :<: f)  => Expr f -> Expr f -> Expr f
+ x |+| y = inject (Add x y)</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Pisanie wyrażeń wygląda teraz lepiej:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> > let x :: Expr (Add :+: Val) = val 30000 |+| val 1330 |+| val 7
+ > eval x
+ > 31337</textarea></p>
+    </div>
+</section>
+
+<!-- Examples (T) -->
+
+
+<!-- Logic, code snippets, different kinds of formula (K) -->
+
+<!-- Resolution + knowledge base monad (T) -->
+
+<!-- QuickCheck (K) -->
 
 <!-- deck.navigation snippet -->
 <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
@@ -186,7 +316,7 @@
 <!-- Initialize the deck -->
 <script>
 $(function() {
-	$.deck('.slide');
+	$.deck('.slide', { countNested: false });
 });
 </script>
 
