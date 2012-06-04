@@ -272,7 +272,52 @@
 </section>
 
 <!-- Examples (T) -->
+<section class="slide">
+    <h2>Po co to wszystko?</h2>
+    <p class="slide">Teraz możemy dodać mnożenie.</p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> data Mul e = Mul e e
+ 
+ instance Functor Mul where
+    fmap f (Mul x y) = Mul (f x) (f y)
+   
+ instance Eval Mul where
+    evalAlgebra (Mul x y) = x * y
+  
+ infixl 7 |*|  -- ważne !
+ x |*| y = inject (Mul x y)</textarea>
+    </div>
+    <p/>
+    <p class="slide">Nie trzeba zmieniać poprzednio zdefiniowanych operacji!</p>
+</section>
 
+<section class="slide">
+    <h2>Po co to wszystko?</h2>
+    <p class="slide">No to jeszcze potęgowanie.</p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> data Pow e = Pow e e
+ 
+ instance Functor Pow where
+    fmap f (Pow x y) = Pow (f x) (f y)
+ 
+ instance Eval Pow where
+    evalAlgebra (Pow x y) = x ^ y :: Int
+ 
+ infixr 8 |**|
+ x |**| y = inject (Pow x y)</textarea>
+    </div>
+    <p/>
+    <p class="slide">
+    Dla uproszczenia:
+    </p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> type Arithmetic = Expr (Val :+: Add :+: Mul :+: Pow)</textarea>
+    </div>
+    <p/>
+    <p class="slide">
+    Typy trzeba deklarować jawnie - kompilator nie poradzi sobie z wnioskowaniem.
+    </p>
+</section>
 
 <!-- Logic, code snippets, different kinds of formulae (K) -->
 
@@ -460,6 +505,71 @@
 </section>
 
 <!-- Resolution + knowledge base monad (T) -->
+<section class="slide">
+    <h2>Rezolucja w rachunku zdań</h2>
+    <p class="slide">Prosty algorytm, ale trzeba mieć formuły w CNF.</p>
+    <p class="slide">Jeśli da się wyprowadzić fałsz, zbiór klauzul jest niespełnialny.</p>
+    <p class="slide">Jeśli nie da się wyprowadzić żadnych nowych klauzul, zbiór jest spełnialny</p>
+    <p/>
+    <p class="slide">Parę ciekawszych fragmentów kodu:</p>
+
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> -- rezolucja klauzul
+ combine :: [Clause] -> [Clause] -> String -> [Clause]
+ combine pos neg l = do
+    let 
+        isNotPos x = (not (literalSign x)) || literalSymbol x /= l
+        isNotNeg x = literalSign x || literalSymbol x /= l
+        pos' = map (filter isNotPos) pos
+        neg' = map (filter isNotNeg) neg
+    p <- pos'
+    n <- neg'                                       
+    return (p ++ n)</textarea>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Rezolucja w rachunku zdań</h2>
+    <p class="slide">
+    Poprawianie klauzul:
+    </p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> eliminateDuplicates :: [Clause] -> [Clause]
+ eliminateDuplicates = map nub
+  
+ eliminateTrueClauses :: [Clause] -> [Clause]
+ eliminateTrueClauses = filter noDual
+    where noDual :: Clause -> Bool  
+          noDual c = let
+              ps = S.fromList [literalSymbol l | l <- c, literalSign l]
+              ns = S.fromList [literalSymbol l | l <- c, not $ literalSign l]
+           in
+              S.null (ps `S.intersection` ns)
+  
+ rectify :: [Clause] -> [Clause]                           
+ rectify = nub . eliminateDuplicates . eliminateTrueClauses</textarea>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Rezolucja w rachunku zdań</h2>
+    <p class="slide">
+    Sprawdzanie spełnialności:
+    </p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> satisfiable :: CNF -> Bool
+ satisfiable f = if [] `elem` f
+                    then False
+                    else satisfiable' f (propList f)
+     where satisfiable' f lits = let
+         newClauses = (resolutionStep f lits) \\ f -- :)
+      in
+         case newClauses of
+             [] -> True
+             l | [] `elem` l -> False
+             l | otherwise   -> satisfiable' (f ++ l) lits</textarea>
+    </div>
+</section>
 
 <!-- QuickCheck (K) -->
 
