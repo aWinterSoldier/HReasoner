@@ -599,7 +599,7 @@
 
 <section class="slide">
     <h2>Monada KnowledgeBase</h2>
-    <div class="slide">
+    <div>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> consistent :: KnowledgeBase Bool
  consistent = do
     kb <- get
@@ -621,7 +621,7 @@
 
 <section class="slide">
     <h2>Monada KnowledgeBase</h2>
-    <div class="slide">
+    <div>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> runKB :: KnowledgeBase a -> CNF -> (a, CNF)
  runKB (KB s) f = runState s f
  
