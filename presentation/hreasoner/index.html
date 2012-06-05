@@ -571,6 +571,71 @@
     </div>
 </section>
 
+<section class="slide">
+    <h2>Wnioskowanie w rachunku zdań</h2>
+    <p class="slide">Często we wnioskowaniu mamy daną pewną bazę wiedzy.</p>
+    <p class="slide">Działanie polega na poznawaniu nowych faktów i wyciąganiu wniosków.</p>
+    <p/>
+    <p class="slide"><strong>KnowledgeBase</strong> - monada stanu z operacjami:</p>
+    <ul class="slide">
+        <li>sprawdzenie spójności bazy wiedzy</li>
+        <li>dodanie nowej formuły do bazy</li>
+        <li>spawdzenie czy formuła wynika z bazy wiedzy</li>
+    </ul>
+    <p class="slide">prawdziwość (tautologia) = zaprzeczenie jest niespełnialne</p>
+</section>
+
+<section class="slide">
+    <h2>Monada KnowledgeBase</h2>
+    <p class="slide">Właściwie monada stanu, ale chcemy ograniczyć dozwolone operacje.</p>
+    <p class="slide">Można opakować w newtype i wyprowadzić instancje.</p>
+    <p class="slide">Fajna pragma: <strong>GeneralizedNewtypeDeriving</strong></p>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> newtype KnowledgeBase a = KB (State CNF a) deriving(Functor,
+     Monad,
+     MonadState CNF)</textarea>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Monada KnowledgeBase</h2>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> consistent :: KnowledgeBase Bool
+ consistent = do
+    kb <- get
+    return $ satisfiable kb
+ 
+ learn :: Formula Input -> KnowledgeBase ()
+ learn f = do
+    kb <- get
+    put $ rectify (kb ++ convertToCNF f)
+ 
+ prove :: Formula Input -> KnowledgeBase Bool
+ prove f = do
+    kb <- get
+    let
+        notF = convertToCNF (L.not f)
+    return $ (not . satisfiable) (kb ++ notF)</textarea>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Monada KnowledgeBase</h2>
+    <div class="slide">
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> runKB :: KnowledgeBase a -> CNF -> (a, CNF)
+ runKB (KB s) f = runState s f
+ 
+ evalKB :: KnowledgeBase a -> CNF -> a
+ evalKB (KB s) f = evalState s f
+ 
+ execKB :: KnowledgeBase a -> CNF -> CNF
+ execKB (KB s) f = execState s f</textarea>
+    </div>
+    <p/>
+    <p class="slide">Eksportujemy wymienione funkcje i konstruktor typu.<p>
+
+
+</section>
 <!-- QuickCheck (K) -->
 
 <section class="slide">
