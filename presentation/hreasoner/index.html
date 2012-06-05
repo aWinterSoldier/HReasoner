@@ -271,9 +271,28 @@
  instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
      inj = Inr . inj</textarea></p>
     </div>
+
+</section>
+<section class="slide">
+    <h2>Konstruowanie wyrażeń - podejście 2</h2>
+    <div>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ infixr :<:
+ 
+ class (Functor sub, Functor sup) => sub :<: sup where
+     inj :: sub a -> sup a
+ 
+ instance Functor f => f :<: f where
+     inj = id
+ instance (Functor f, Functor g) => f :<: (f :+: g) where
+     inj = Inl
+ instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
+     inj = Inr . inj</textarea></p>
+    </div>
     <div class="slide">
         <p>Powyższe instancje nie wyczerpują wszystkich przypadków.</p>
-        <p>Na przykład nie wynika z nich, że <code>f :<: ((f :+: g) :+: h)</code> (<code>Inl . Inl</code>...).</p>
+        <p>Na przykład nie wynika z nich, że <code>f :<: ((f :+: g) :+: h).</code></p>
+        <p>(<code>Inl . Inl</code>...)</p>
         <p>Ale w połączeniu z definicją <code>:+:</code> jako <code>infixr</code> wystarczą!</p>
     </div>
 </section>
