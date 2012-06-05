@@ -39,14 +39,14 @@
 
 <!-- Begin slides -->
 <section class="slide" id="title-slide">
-    <h1>Rachunek zdań à la carte</h1>
+    <h1>Rachunek zdań</br>à la carte</h1>
     <h5>Katarzyna Krasnowska</h5>
     <h5>Tomasz Kaftal</h5>
 </section>
 
 <section class="slide">
     <h2>Prosty przykład</h2>
-    <div class="slide">
+    <div>
         <p>Wyrażenia arytmetyczne z dodawaniem</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  data Expr = Val Int | Add Expr Expr
@@ -101,8 +101,8 @@
 
 <section class="slide">
     <h2>Data types à la carte</h2>
-    <div class="slide">
-        <p>Rozwiązanie: rekurencyjny typ danych dla wyrażenia</p>
+    <div>
+        <p>Rozwiązanie: rekurencyjny typ danych dla wyrażenia.</p>
         <p>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  data Expr f = In (f (Expr f))
@@ -119,39 +119,44 @@
         <li class="slide">Typ "liściowy" (<strong>Val e</strong>) kończy rekurencję.</li>
     </ul>
     </div>
-
     <div class="slide">
-        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  type IntExpr = Expr Val
- type AddExpr = Expr Add</textarea>
+ type AddExpr = Expr Add</textarea></p>
     </div>
-
     <p class="slide">Jak połączyć dwa typy?</p>
 </section>
 
 <section class="slide">
-    <h2>Koprodukt (suma rozłączna)</h2>
-    <div class="slide">
-        <p>Koprodukt konstruktorów typu</p>
-        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
- infixr 6 :+:       
- 
- data (f :+: g) e = Inl (f e) | Inr (g e)</textarea></p>
-    </div>
-    <div class="slide">
-        <p>Przykład</p>
-        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
- addExample :: Expr (Val :+: Add)
- addExample = In (Inr (Add (In (Inl (Val 118))) (In (Inl (Val 1219)))))</textarea></p>
-    </div>
-    <div class="slide">
-        <p>Koprodukt dwóch funktorów też jest funktorem</p>
+    <h2>Data types à la carte</h2>
+    <div>
+        <p>Tak zdefiniowane typy dla wyrażeń są funktorami:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  instance Functor Val where
      fmap f (Val x) = Val x
       
  instance Functor Add where
      fmap f (Add e1 e2) = Add (f e1) (f e2)</textarea></p>
+    </div>
+</section>
+
+<section class="slide">
+    <h2>Koprodukt (suma rozłączna)</h2>
+    <div>
+        <p>Koprodukt konstruktorów typu:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ infixr 6 :+:       
+ 
+ data (f :+: g) e = Inl (f e) | Inr (g e)</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Przykład:</p>
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
+ addExample :: Expr (Val :+: Add)
+ addExample = In (Inr (Add (In (Inl (Val 118))) (In (Inl (Val 1219)))))</textarea></p>
+    </div>
+    <div class="slide">
+        <p>Koprodukt dwóch funktorów też jest funktorem.</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  instance (Functor f, Functor g) => Functor (f :+: g) where
      fmap f (Inl e) = Inl (fmap f e)
@@ -161,14 +166,14 @@
 
 <section class="slide">
     <h2>Obliczamy wartość wyrażenia</h2>
-    <div class="slide">
-        <p>Pamiętamy, że <code>f</code> jest funktorem</p>
+    <div>
+        <p>Pamiętamy, że <code>f</code> jest funktorem.</p>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  foldExpr :: Functor f => (f a -> a) -> Expr f -> a
  foldExpr f (In t) = f (fmap (foldExpr f) t)</textarea></p>
     </div>
     <div class="slide">
-        <p>Definiujemy funkcję <code>evalAlgebra</code>, która będzie pierwszym argumentem dla <code>foldExpr</code></p>
+        <p>Definiujemy funkcję <code>evalAlgebra</code>, która będzie pierwszym argumentem dla <code>foldExpr</code>:</p>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  class Functor f => Eval f where
      evalAlgebra :: f Int -> Int
@@ -182,23 +187,23 @@
      evalAlgebra (Inl x) = evalAlgebra x
      evalAlgebra (Inr y) = evalAlgebra y</textarea></p>
     </div> 
-    <p class="slide">Dla każdej operacji definiujemy nową, rozłączną klasę.</p>
+    <p class="slide">Dla każdej operacji na wyrażeniach definiujemy nową, osobną klasę.</p>
 </section>
 <section class="slide">
     <h2>Obliczamy wartość wyrażenia</h2>
     <div>
-        <p>I możemy wyliczyć wartość wyrażenia</p>
+        <p>I możemy wyliczyć wartość wyrażenia:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  eval :: Eval f => Expr f -> Int
  eval expr = foldExpr evalAlgebra expr</textarea></p>
-        <p><textarea id="code" name="code" class="code slide" mode="haskell" style="display: none;"> > eval addExample
+        <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> > eval addExample
  > 1337</textarea></p>
     </div>
 </section>
 
 <section class="slide">
     <h2>Konstruowanie wyrażeń - podejście 1</h2>
-    <div class="slide">
+    <div>
         <p>Przypomnijmy sobie, jak obrzydliwie wyglądała definicja <code>addExample:</code></p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  addExample :: Expr (Val :+: Add)
@@ -221,14 +226,14 @@
 
 <section class="slide">
     <h2>Konstruowanie wyrażeń - podejście 2</h2>
-    <div class="slide">
+    <div>
         <p>Typy dla <code>val</code> i <code>|+|</code> będą teraz wyglądały następująco:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  (|+|) :: (Add :<: f) => Expr f -> Expr f -> Expr f
  val   :: (Val :<: f) => Int -> Expr f</textarea></p>
     </div>
     <div class="slide">
-        <p><code>sub :<: sup</code> jest spełnione, jeśli istnieje włożenie z <code>sub a</code> w <code>sup a</code>:</p>
+        <p><code>sub :<: sup</code> jest spełnione, jeśli istnieje zanurzenie <code>sub a</code> w <code>sup a</code>:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  infixr :<:
  
@@ -251,7 +256,7 @@
 
 <section class="slide">
     <h2>Konstruowanie wyrażeń - podejście 2</h2>
-    <div class="slide">
+    <div>
         <p>Nowe definicje dla <code>val</code> i <code>|+|</code>:</p>
         <p><textarea id="code" name="code" class="code" mode="haskell" style="display: none;">
  inject :: (g :<: f) => g (Expr f) -> Expr f
@@ -274,7 +279,7 @@
 <!-- Examples (T) -->
 <section class="slide">
     <h2>Po co to wszystko?</h2>
-    <p class="slide">Teraz możemy dodać mnożenie.</p>
+    <p>Teraz możemy dodać mnożenie.</p>
     <div class="slide">
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> data Mul e = Mul e e
  
@@ -293,7 +298,7 @@
 
 <section class="slide">
     <h2>Po co to wszystko?</h2>
-    <p class="slide">No to jeszcze potęgowanie.</p>
+    <p>No to jeszcze potęgowanie.</p>
     <div class="slide">
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> data Pow e = Pow e e
  
@@ -487,8 +492,7 @@
  cnf = foldFormula cnfAlg
  
  class (Functor f) => ToCNF f where
-     cnfAlg :: f CNF -> CNF
- </textarea></p>
+     cnfAlg :: f CNF -> CNF</textarea></p>
     </div>
 </section>
 
@@ -501,20 +505,20 @@
  convertToCNF :: Formula Input -> CNF
  convertToCNF = cnf . pushNeg . elimImpl</textarea></p>
     </div>
-    <p class="slide">Gotowe.</p>
+    <p class="slide">I gotowe.</p>
 </section>
 
 <!-- Resolution + knowledge base monad (T) -->
 <section class="slide">
     <h2>Rezolucja w rachunku zdań</h2>
-    <p class="slide">Prosty algorytm, ale trzeba mieć formuły w CNF.</p>
+    <p class="slide">Prosty algorytm, ale trzeba mieć formuły w postaci CNF.</p>
     <p class="slide">Jeśli da się wyprowadzić fałsz, zbiór klauzul jest niespełnialny.</p>
     <p class="slide">Jeśli nie da się wyprowadzić żadnych nowych klauzul, zbiór jest spełnialny</p>
     <p/>
     <p class="slide">Parę ciekawszych fragmentów kodu:</p>
 
     <div class="slide">
-        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> -- rezolucja klauzul
+        <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> -- zastosowanie reguły rezolucji
  combine :: [Clause] -> [Clause] -> String -> [Clause]
  combine pos neg l = do
     let 
@@ -530,10 +534,8 @@
 
 <section class="slide">
     <h2>Rezolucja w rachunku zdań</h2>
-    <p class="slide">
-    Poprawianie klauzul:
-    </p>
-    <div class="slide">
+    <div>
+    <p>Poprawianie klauzul:</p>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> eliminateDuplicates :: [Clause] -> [Clause]
  eliminateDuplicates = map nub
   
@@ -553,16 +555,14 @@
 
 <section class="slide">
     <h2>Rezolucja w rachunku zdań</h2>
-    <p class="slide">
-    Sprawdzanie spełnialności:
-    </p>
-    <div class="slide">
+    <div>
+        <p>Sprawdzanie spełnialności:</p>
         <textarea id="code" name="code" class="code" mode="haskell" style="display: none;"> satisfiable :: CNF -> Bool
  satisfiable f = if [] `elem` f
                     then False
                     else satisfiable' f (propList f)
      where satisfiable' f lits = let
-         newClauses = (resolutionStep f lits) \\ f -- :)
+         newClauses = (resolutionStep f lits) \\ f
       in
          case newClauses of
              [] -> True
