@@ -1,4 +1,4 @@
-module RunTests where
+module Main where
 
 import Test.QuickCheck
 
